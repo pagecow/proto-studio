@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proto Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="pf-shell" id="shell">
+
+    <!-- ── Column 1 — projects ─────────────────────────────────────── -->
+    <aside class="pf-col pf-col--projects">
+      <div class="pf-head">
+        <span class="app-sidebar-label">Projects</span>
+        <div class="spacer"></div>
+        <button class="btn btn-sm" id="btnNew" type="button">New</button>
+      </div>
+      <div class="pf-scroll">
+        <div class="list" id="projectList"></div>
+        <div class="empty pf-empty-inline" id="projectEmpty" hidden>
+          <div class="empty-title">No projects</div>
+          <div class="empty-text">Make one to start prototyping.</div>
+        </div>
+      </div>
+      <div class="pf-foot">
+        <button class="btn btn-ghost btn-sm" id="btnRename" type="button">Rename</button>
+        <button class="btn btn-ghost btn-sm" id="btnDuplicate" type="button">Duplicate</button>
+        <button class="btn btn-ghost btn-sm" id="btnDelete" type="button">Delete</button>
+      </div>
+    </aside>
+
+    <div class="pf-grip" id="gripLeft" title="Drag to resize"></div>
+
+    <!-- ── Column 2 — Proto Agent ──────────────────────────────────── -->
+    <section class="pf-col pf-col--agent">
+      <div class="pf-head">
+        <span class="pf-agent-dot" aria-hidden="true"></span>
+        <span class="app-title">Proto Agent</span>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm" id="btnClearChat" type="button" title="Clear this project's conversation">Clear</button>
+      </div>
+      <div class="pf-modelbar">
+        <label class="label" for="modelSelect">Model</label>
+        <select class="select pf-model" id="modelSelect"></select>
+        <div class="spacer"></div>
+        <span class="faint" id="agentMeta">—</span>
+      </div>
+      <div class="chat pf-chat" id="chatLog"></div>
+      <div class="pf-chips" id="chips"></div>
+      <div class="composer pf-composer">
+        <textarea class="textarea" id="prompt" rows="2" spellcheck="false"
+          placeholder="Describe the prototype — e.g. &ldquo;a pricing page for a coffee subscription&rdquo;"></textarea>
+        <div class="pf-composer-row">
+          <span class="hint" id="composerHint">⌘⏎ to send</span>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" id="btnStop" type="button" hidden>Stop</button>
+          <button class="btn btn-primary btn-sm" id="btnSend" type="button">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="pf-grip" id="gripMid" title="Drag to resize"></div>
+
+    <!-- ── Column 3 — prototype canvas ─────────────────────────────── -->
+    <main class="pf-col pf-col--canvas">
+      <div class="toolbar pf-toolbar">
+        <div class="seg pf-seg" id="targetSeg" role="group" aria-label="Preview device">
+          <button class="seg-item" type="button" data-target="desktop">Desktop</button>
+          <button class="seg-item" type="button" data-target="tablet">Tablet</button>
+          <button class="seg-item" type="button" data-target="phone">Phone</button>
+        </div>
+        <button class="btn btn-sm" id="btnRotate" type="button" title="Rotate the device">Rotate</button>
+        <div class="spacer"></div>
+        <label class="label" for="zoomSelect">Zoom</label>
+        <select class="select pf-zoom" id="zoomSelect">
+          <option value="fit">Fit</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1">100%</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="btn btn-sm" id="btnCode" type="button">Code</button>
+        <button class="btn btn-sm" id="btnCopy" type="button">Copy HTML</button>
+        <button class="btn btn-sm" id="btnSaveDrive" type="button">Save to Drive</button>
+        <button class="btn btn-icon" id="btnReload" type="button" title="Reload the preview">↻</button>
+      </div>
+
+      <div class="pf-stage" id="stage">
+        <div class="pf-device-wrap" id="deviceWrap" hidden>
+          <div class="pf-scaler" id="scaler">
+            <div class="pf-device" id="device" data-target="desktop">
+              <div class="pf-chrome" id="chrome">
+                <span class="pf-lamp"></span><span class="pf-lamp"></span><span class="pf-lamp"></span>
+                <span class="pf-url" id="chromeUrl">proto.studio</span>
+                <span class="pf-lamp pf-lamp--ghost"></span>
+              </div>
+              <div class="pf-screen" id="screen">
+                <iframe id="frame" class="pf-frame" sandbox="allow-scripts" title="Prototype preview"></iframe>
+                <div class="pf-notch" id="notch" hidden></div>
+                <div class="pf-home" id="homeBar" hidden></div>
+              </div>
+            </div>
+          </div>
+          <div class="pf-caption" id="caption"></div>
+        </div>
+
+        <div class="empty pf-empty-stage" id="stageEmpty">
+          <div class="empty-title">No prototype yet</div>
+          <div class="empty-text">Ask the Proto Agent to design one — or paste your own HTML in Code view.</div>
+          <div class="btn-row pf-empty-actions">
+            <button class="btn btn-primary" id="btnStarter" type="button">Start with a landing page</button>
+            <button class="btn" id="btnStarterCode" type="button">Paste HTML</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pf-code" id="codePane" hidden>
+        <div class="pf-code-head">
+          <span class="app-sidebar-label">Prototype source</span>
+          <div class="spacer"></div>
+          <span class="hint" id="codeHint"></span>
+          <button class="btn btn-ghost btn-sm" id="btnCodeRevert" type="button">Revert</button>
+          <button class="btn btn-primary btn-sm" id="btnCodeApply" type="button">Apply</button>
+          <button class="btn btn-ghost btn-sm" id="btnCodeClose" type="button">Close</button>
+        </div>
+        <textarea class="textarea mono" id="codeEditor" spellcheck="false" wrap="off"></textarea>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── in-frame modals (window.confirm/alert/prompt DO NOT work here) ── -->
+  <div class="overlay" id="mdName" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mdNameTitle">
+      <div class="modal-head">
+        <span id="mdNameTitle">New project</span>
+        <button class="modal-close" id="mdNameX" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="label" for="mdNameInput">Name</label>
+          <input class="input" id="mdNameInput" type="text" placeholder="Untitled prototype" autocomplete="off" />
+        </div>
+        <div class="field" id="mdTargetField">
+          <label class="label" for="mdTargetSelect">Device</label>
+          <select class="select" id="mdTargetSelect">
+            <option value="desktop">Desktop — website</option>
+            <option value="tablet">Tablet — tablet app</option>
+            <option value="phone">Phone — phone app</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="mdNameCancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="mdNameSave" type="button">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="mdConfirm" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mdConfirmTitle">
+      <div class="modal-head">
+        <span id="mdConfirmTitle">Are you sure?</span>
+        <button class="modal-close" id="mdConfirmX" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="pf-modal-text" id="mdConfirmText"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="mdConfirmCancel" type="button">Cancel</button>
+        <button class="btn btn-danger" id="mdConfirmOk" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf-toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

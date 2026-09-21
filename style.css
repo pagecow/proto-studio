@@ -1,0 +1,200 @@
+/* Proto Studio — app styles.
+   Built on the platform tokens + component classes: no :root colour overrides,
+   no prefers-color-scheme rules (the host stamps data-theme on the root). */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── shell: projects | Proto Agent | canvas ───────────────────────── */
+.pf-shell {
+  display: grid;
+  height: 100%;
+  grid-template-columns:
+    var(--pf-w-left, 236px) 7px
+    var(--pf-w-mid, 384px) 7px
+    minmax(320px, 1fr);
+}
+.pf-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
+.pf-col--projects { background: var(--bg-sidebar); border-right: 1px solid var(--border); }
+.pf-col--agent { border-right: 1px solid var(--border); }
+.pf-col--canvas { position: relative; }
+
+.pf-grip { cursor: col-resize; background: var(--border); opacity: 0.45; transition: opacity 0.12s ease; }
+.pf-grip:hover, .pf-grip.is-dragging { opacity: 1; background: var(--accent); }
+
+.pf-head {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.pf-foot {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 7px 8px; border-top: 1px solid var(--border);
+}
+.pf-scroll { flex: 1; min-height: 0; overflow: auto; padding: 6px; }
+
+/* ── projects ─────────────────────────────────────────────────────── */
+.pf-proj {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  text-align: left; cursor: pointer; background: none;
+  border: 0; padding: 7px 8px; border-radius: var(--radius);
+}
+.pf-proj-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pf-proj .list-row-title { font-weight: 600; }
+.pf-proj .list-row-meta { font-size: 11px; }
+.pf-proj-badge { flex: none; font-size: 10px; padding: 1px 6px; }
+.pf-empty-inline { padding: 22px 10px; }
+
+/* ── Proto Agent ──────────────────────────────────────────────────── */
+.pf-agent-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pf-modelbar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.pf-model { flex: 1; min-width: 0; max-width: 230px; font-size: 12px; }
+#agentMeta { font-size: 11px; white-space: nowrap; }
+
+.pf-chat { flex: 1; min-height: 0; overflow: auto; padding: 12px 12px 6px; }
+.pf-chat .msg { max-width: 100%; }
+.pf-chat .msg-body { white-space: normal; overflow-wrap: anywhere; }
+.pf-chat .msg-body p { margin: 0 0 8px; }
+.pf-chat .msg-body p:last-child { margin-bottom: 0; }
+.pf-chat .msg-body ul, .pf-chat .msg-body ol { margin: 4px 0 8px; padding-left: 18px; }
+.pf-chat .msg-body code {
+  font-family: var(--mono); font-size: 11.5px;
+  background: var(--code-bg); border-radius: 4px; padding: 1px 4px;
+}
+.pf-intro { padding: 4px 2px 10px; }
+.pf-intro .empty-title { font-size: 13px; }
+.pf-intro .empty-text { font-size: 12px; }
+.pf-tool { margin-top: 6px; }
+.pf-tool .tool-name { font-family: var(--mono); font-size: 11px; }
+.pf-note { margin-top: 6px; }
+.pf-error { color: var(--danger); }
+.pf-flash { animation: pfFlash 0.9s ease; }
+@keyframes pfFlash {
+  0% { box-shadow: 0 0 0 0 var(--accent-soft); }
+  60% { box-shadow: 0 0 0 3px var(--accent-soft); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+.pf-typing { display: inline-flex; gap: 3px; align-items: center; height: 14px; }
+.pf-typing span {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--muted);
+  animation: pfBounce 1.1s infinite ease-in-out;
+}
+.pf-typing span:nth-child(2) { animation-delay: 0.14s; }
+.pf-typing span:nth-child(3) { animation-delay: 0.28s; }
+@keyframes pfBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.45; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+.pf-cursor {
+  display: inline-block; width: 7px; height: 13px; margin-left: 2px;
+  background: var(--accent); vertical-align: text-bottom; animation: pfBlink 1s steps(2) infinite;
+}
+@keyframes pfBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px 0; max-height: 104px; overflow: auto; }
+.pf-chips .chip { cursor: pointer; font-size: 11.5px; }
+.pf-chips .chip:hover { border-color: var(--accent); color: var(--text); }
+
+.pf-composer {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 10px 10px; border-top: 1px solid var(--border); background: var(--bg);
+}
+.pf-composer .textarea { min-height: 54px; max-height: 190px; resize: none; font-size: 12.5px; }
+.pf-composer-row { display: flex; align-items: center; gap: 8px; }
+.pf-composer-row .hint { font-size: 11px; }
+
+/* ── canvas ───────────────────────────────────────────────────────── */
+.pf-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 10px; }
+.pf-zoom { min-width: 72px; font-size: 12px; }
+.pf-seg .seg-item.is-on { background: var(--accent); color: var(--accent-fg); }
+
+.pf-stage {
+  position: relative; display: flex; flex: 1; min-height: 0; overflow: auto; padding: 26px;
+  background-color: var(--surface-2);
+  background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
+  background-size: 18px 18px;
+}
+.pf-device-wrap { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; flex: none; }
+.pf-scaler { position: relative; flex: none; }
+
+.pf-device {
+  position: absolute; top: 0; left: 0;
+  transform-origin: top left;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface-3, var(--surface-2));
+  box-shadow:
+    0 0 0 1px var(--border-strong),
+    0 30px 70px rgba(0, 0, 0, 0.30),
+    0 2px 8px rgba(0, 0, 0, 0.14);
+}
+.pf-device[data-target="desktop"] { border-radius: 12px; }
+.pf-device[data-target="tablet"] { border-radius: 34px; padding: 20px; }
+.pf-device[data-target="phone"] { border-radius: 46px; padding: 12px; }
+
+.pf-chrome { display: none; align-items: center; gap: 6px; height: 36px; padding: 0 12px; flex: none; border-bottom: 1px solid var(--border); background: var(--surface-3, var(--surface-2)); }
+.pf-device[data-target="desktop"] .pf-chrome { display: flex; }
+.pf-lamp { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); flex: none; }
+.pf-lamp--ghost { background: transparent; }
+.pf-url {
+  margin: 0 auto; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; color: var(--muted); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 999px; padding: 3px 26px;
+}
+
+.pf-screen { position: relative; flex: none; overflow: hidden; background: #ffffff; }
+.pf-device[data-target="desktop"] .pf-screen { border-radius: 0 0 11px 11px; }
+.pf-device[data-target="tablet"] .pf-screen { border-radius: 16px; }
+.pf-device[data-target="phone"] .pf-screen { border-radius: 36px; }
+.pf-frame { display: block; width: 100%; height: 100%; border: 0; background: #ffffff; }
+.pf-notch {
+  position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+  width: 112px; height: 26px; border-radius: 999px; background: #0b0b0f; pointer-events: none;
+}
+.pf-home {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 132px; height: 5px; border-radius: 999px; background: rgba(0, 0, 0, 0.34); pointer-events: none;
+}
+.pf-caption { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.pf-empty-stage { margin: auto; max-width: 380px; text-align: center; }
+.pf-empty-actions { justify-content: center; margin-top: 12px; }
+
+/* ── code pane ────────────────────────────────────────────────────── */
+.pf-code { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pf-code-head { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.pf-code-head .hint { font-size: 11px; }
+#codeEditor {
+  flex: 1; min-height: 0; border: 0; border-radius: 0; resize: none;
+  font-family: var(--mono); font-size: 12px; line-height: 1.55; padding: 12px; white-space: pre; overflow: auto;
+}
+
+/* ── toast + modal bits ───────────────────────────────────────────── */
+.pf-toast {
+  position: fixed; right: 16px; bottom: 16px; z-index: 60; max-width: 60%;
+  background: var(--elevated, var(--surface)); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  padding: 9px 13px; font-size: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+.pf-toast.is-error { border-color: var(--danger); color: var(--danger); }
+.pf-modal-text { margin: 0; color: var(--text-2); }
+
+/* [hidden] must win over the component display values above. */
+.pf-shell [hidden],
+.overlay[hidden],
+.overlay [hidden],
+.pf-toast[hidden] { display: none !important; }

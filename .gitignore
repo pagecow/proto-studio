@@ -1,0 +1,10 @@
+# macOS / editor noise
+.DS_Store
+*.log
+
+# agent scratch space (never committed)
+tmp/
+
+# release artifacts are release assets, not source
+*.aip
+*.zip

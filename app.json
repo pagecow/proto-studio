@@ -1,0 +1,18 @@
+{
+  "id": "com.protoforge.studio",
+  "name": "Proto Studio",
+  "version": "1.0.0",
+  "description": "Design visual prototypes of websites, tablet apps and phone apps with an AI Proto Agent, then review them in desktop, tablet and phone frames.",
+  "icon": "icon.svg",
+  "entry": "index.html",
+  "capabilities": [
+    "chatApi",
+    "clipboardWrite",
+    "drive"
+  ],
+  "scopedDataKeys": [
+    "protoStudio.v1"
+  ],
+  "dataStoreRequests": [],
+  "toolsStoreRequests": []
+}
