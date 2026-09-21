@@ -94,6 +94,8 @@
   let confirmResolve = null;
   let saveTimer = null;
   let toastTimer = null;
+  let pending = [];            // images staged for the next turn
+  const MAX_IMAGES = 6;
 
   const active = () => store.projects.find((p) => p.id === store.activeId) || null;
   const targetOf = (p) => TARGETS[(p && p.target) || 'desktop'];
@@ -117,6 +119,162 @@
       created: Date.now(),
       updated: Date.now()
     };
+  }
+
+  /* ── image attachments ────────────────────────────────────────────────
+     The host hands dropped files over as { name, type, size, text(),
+     arrayBuffer() }. Images ride to the model as `images: [base64]` on the
+     message (ChatTurn — base64 WITHOUT the data-URL prefix), so everything
+     here is stored as a data URL for display and stripped to base64 to send. */
+  const isImageFile = (f) => !!(f && typeof f.type === 'string' && f.type.indexOf('image/') === 0);
+
+  function readAsDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      const fr = new FileReader();
+      fr.onload = function () { resolve(String(fr.result || '')); };
+      fr.onerror = function () { reject(fr.error || new Error('read failed')); };
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  /* Downscale + re-encode to JPEG, mirroring the host's own attachment pipeline. */
+  function downscale(dataUrl, maxPx) {
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const long = Math.max(img.width, img.height) || 1;
+          const scale = Math.min(1, maxPx / long);
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const g = c.getContext('2d');
+          g.fillStyle = '#ffffff';
+          g.fillRect(0, 0, w, h);
+          g.drawImage(img, 0, 0, w, h);
+          resolve({ dataUrl: c.toDataURL('image/jpeg', 0.86), w: w, h: h });
+        } catch (err) { reject(err); }
+      };
+      img.onerror = function () { reject(new Error('not a readable image')); };
+      img.src = dataUrl;
+    });
+  }
+
+  async function toAttachment(source) {
+    const mime = source.type || 'image/png';
+    const name = source.name || 'pasted image';
+    const buf = typeof source.arrayBuffer === 'function' ? await source.arrayBuffer() : source;
+    const blob = new Blob([buf], { type: mime });
+    const raw = await readAsDataUrl(blob);
+    let dataUrl = raw;
+    let w = 0, h = 0;
+    if (mime !== 'image/svg+xml') {
+      try {
+        const small = await downscale(raw, 1400);
+        dataUrl = small.dataUrl; w = small.w; h = small.h;
+      } catch (err) { /* keep the original bytes (e.g. an unreadable codec) */ }
+    }
+    return { name: name, mime: mime, dataUrl: dataUrl, w: w, h: h };
+  }
+
+  async function addImages(sources) {
+    const room = MAX_IMAGES - pending.length;
+    if (room <= 0) { toast('Up to ' + MAX_IMAGES + ' images per message', true); return; }
+    let added = 0, failed = 0;
+    for (const src of Array.prototype.slice.call(sources, 0, room)) {
+      try { pending.push(await toAttachment(src)); added++; }
+      catch (err) { failed++; }
+    }
+    if (failed) toast('Could not read ' + failed + ' file' + (failed > 1 ? 's' : '') + ' (images only)', true);
+    if (added) { renderPending(); renderVisionHint(); }
+  }
+
+  function renderPending() {
+    const tray = $('#attachTray');
+    tray.textContent = '';
+    tray.hidden = pending.length === 0;
+    pending.forEach(function (a, i) {
+      const wrap = document.createElement('div');
+      wrap.className = 'pf-attach';
+      const img = document.createElement('img');
+      img.src = a.dataUrl;
+      img.alt = a.name;
+      img.title = a.name + (a.w ? ' · ' + a.w + '×' + a.h : '') + ' — click to view';
+      img.addEventListener('click', function () { openImage(a.dataUrl, a.name); });
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'pf-attach-x';
+      x.textContent = '×';
+      x.title = 'Remove this image';
+      x.addEventListener('click', function () {
+        pending.splice(i, 1);
+        renderPending();
+        renderVisionHint();
+      });
+      wrap.append(img, x);
+      tray.append(wrap);
+    });
+  }
+
+  function modelInfo(id) {
+    return (models || []).find(function (m) { return m.id === id; }) || null;
+  }
+  function canSee(info) {
+    return !!(info && Array.isArray(info.capabilities) && info.capabilities.indexOf('vision') >= 0);
+  }
+  function visionModels() {
+    return (models || []).filter(function (m) { return canSee(m) && m.available !== false; });
+  }
+  function chatHasImages(p) {
+    return !!(p && p.chat.slice(-6).some(function (m) { return m.images && m.images.length; }));
+  }
+
+  /* Warn (and offer a one-click fix) when the chosen model can't see images. */
+  function renderVisionHint() {
+    const box = $('#visionHint');
+    const p = active();
+    const info = modelInfo(resolveModel(p));
+    const wants = pending.length > 0 || chatHasImages(p);
+    if (!wants || canSee(info) || !models.length) { box.hidden = true; return; }
+    box.hidden = false;
+    box.textContent = '';
+    const label = document.createElement('span');
+    label.textContent = '⚠ ' + (info ? info.name : 'This model') + ' can’t see images.';
+    box.append(label);
+    const alt = visionModels()[0];
+    if (alt) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm';
+      btn.textContent = 'Use ' + alt.name;
+      btn.addEventListener('click', function () { selectModel(alt.id); });
+      box.append(btn);
+    }
+  }
+
+  function selectModel(id) {
+    const p = active();
+    store.model = id;
+    if (p) p.model = id;
+    const sel = $('#modelSelect');
+    if (sel) sel.value = id;
+    save();
+    renderAgentHeader();
+    renderVisionHint();
+    const info = modelInfo(id);
+    toast('Model: ' + (info ? info.name : id));
+  }
+
+  function openImage(src, name) {
+    $('#mdImageName').textContent = name || 'Image';
+    $('#mdImageImg').src = src;
+    $('#mdImage').hidden = false;
+  }
+
+  function closeImage() {
+    $('#mdImage').hidden = true;
+    $('#mdImageImg').src = '';
   }
 
   /* ── persistence ──────────────────────────────────────────────────── */
@@ -239,6 +397,23 @@
     role.textContent = m.role === 'user' ? 'You' : 'Proto Agent';
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
+    if (m.images && m.images.length) {
+      const strip = document.createElement('div');
+      strip.className = 'pf-thumbs';
+      m.images.forEach(function (im) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pf-thumb';
+        b.title = (im.name || 'image') + ' — click to view';
+        const img = document.createElement('img');
+        img.src = im.dataUrl;
+        img.alt = im.name || 'attached image';
+        b.append(img);
+        b.addEventListener('click', function () { openImage(im.dataUrl, im.name); });
+        strip.append(b);
+      });
+      bubble.append(strip);
+    }
     const body = document.createElement('div');
     body.className = 'msg-body';
     body.innerHTML = mdToHtml(m.content || '') || '<p class="faint">…</p>';
@@ -378,6 +553,7 @@
     renderChat();
     renderChips();
     renderCanvas();
+    renderVisionHint();
   }
 
   function applyWidths() {
@@ -414,6 +590,10 @@
     }
     out.push('');
     out.push('Other tools: create_project(name, target), list_projects(), rename_project(name), set_device(target) — use them when the user asks for a separate prototype, a different device size, or a rename.');
+    if (p.chat.slice(-6).some(function (m) { return m.images && m.images.length; })) {
+      out.push('');
+      out.push('The user attached reference image(s) and you can see them. Match their layout, hierarchy, colours and tone where it makes sense, and reproduce any text you can read in them accurately — do not invent the content of an image you were given.');
+    }
     const html = (p.html || '').trim();
     out.push('');
     if (html) {
@@ -664,10 +844,25 @@
 
   function buildMessages(p) {
     const msgs = [{ role: 'system', content: sysPrompt(p) }];
-    p.chat.filter((m) => !m.error).slice(-20).forEach(function (m) {
+    const hist = p.chat.filter((m) => !m.error).slice(-20);
+    /* Only the newest few image-bearing turns are re-sent — images are tokens. */
+    const keep = hist.filter(function (m) { return m.images && m.images.length; })
+      .slice(-3).map(function (m) { return m.ts; });
+    hist.forEach(function (m) {
       const c = (m.content || '').trim();
-      if (!c) return;
-      msgs.push({ role: m.role === 'user' ? 'user' : 'assistant', content: c.length > 3000 ? c.slice(0, 3000) + ' …' : c });
+      const imgs = (m.images || []).filter(function (im) {
+        return im && im.dataUrl && keep.indexOf(m.ts) >= 0;
+      });
+      if (!c && !imgs.length) return;
+      const turn = {
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: c.length > 3000 ? c.slice(0, 3000) + ' …' : c
+      };
+      if (imgs.length) {
+        /* ChatTurn.images is base64 WITHOUT the data-URL prefix. */
+        turn.images = imgs.map(function (im) { return String(im.dataUrl).split(',')[1] || ''; }).filter(Boolean);
+      }
+      msgs.push(turn);
     });
     return msgs;
   }
@@ -709,7 +904,7 @@
     $('#btnSend').disabled = on;
     $('#btnStop').hidden = !on;
     $('#prompt').disabled = on;
-    $('#composerHint').textContent = on ? 'Proto Agent is designing…' : '⌘⏎ to send';
+    $('#composerHint').textContent = on ? 'Proto Agent is designing…' : '⌘⏎ send · drop or paste images';
     if (on) $('#chips').textContent = ''; else renderChips();
   }
 
@@ -736,12 +931,14 @@
   async function send(prefill) {
     if (busy) return;
     const box = $('#prompt');
-    const text = String(prefill != null ? prefill : box.value).trim();
-    if (!text) return;
+    const typed = String(prefill != null ? prefill : box.value).trim();
+    const imgs = pending.slice();
+    if (!typed && !imgs.length) return;
+    const text = typed || 'Use this image as the reference for the prototype.';
 
     let p = active();
     if (!p) {
-      p = newProject(autoName(text), null);
+      p = newProject(autoName(typed || ('From ' + (imgs[0].name || 'image'))), null);
       store.projects.push(p);
       store.activeId = p.id;
     }
@@ -751,7 +948,16 @@
       p.targetAuto = false;
       frameDoc = null;
     }
-    pushMsg(p, { role: 'user', content: text });
+    pushMsg(p, {
+      role: 'user',
+      content: text,
+      images: imgs.map(function (a) {
+        return { dataUrl: a.dataUrl, name: a.name, w: a.w, h: a.h };
+      })
+    });
+    pending = [];
+    renderPending();
+    renderVisionHint();
     box.value = '';
     autoGrow(box);
     p.updated = Date.now();
@@ -1065,7 +1271,7 @@
       models.forEach(function (m) {
         const opt = document.createElement('option');
         opt.value = m.id;
-        opt.textContent = m.name + (m.available === false ? ' (unavailable)' : '');
+        opt.textContent = m.name + (canSee(m) ? ' 👁' : '') + (m.available === false ? ' (unavailable)' : '');
         opt.disabled = m.available === false;
         sel.append(opt);
       });
@@ -1166,8 +1372,44 @@
     $('#mdConfirmCancel').addEventListener('click', function () { closeConfirm(false); });
     $('#mdConfirmX').addEventListener('click', function () { closeConfirm(false); });
 
+    /* ── images: host drop bridge, paste, and an in-frame drop fallback ── */
+    wireFileDrop();
+    document.addEventListener('paste', function (e) {
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      const files = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind !== 'file') continue;
+        const f = items[i].getAsFile();
+        if (f && isImageFile(f)) files.push(f);
+      }
+      if (files.length) { e.preventDefault(); addImages(files); }
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        e.preventDefault();
+        document.body.classList.add('pf-dragging');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        e.preventDefault();
+        document.body.classList.remove('pf-dragging');
+        if (ev !== 'drop') return;
+        const dt = e.dataTransfer;
+        if (!dt || !dt.files || !dt.files.length) return;
+        const files = Array.prototype.filter.call(dt.files, isImageFile);
+        if (files.length) addImages(files);
+      });
+    });
+
+    $('#mdImageX').addEventListener('click', closeImage);
+    $('#mdImage').addEventListener('click', function (e) {
+      if (e.target === $('#mdImage')) closeImage();
+    });
+
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
+        if (!$('#mdImage').hidden) closeImage();
         if (!$('#mdName').hidden) closeNameModal(null);
         if (!$('#mdConfirm').hidden) closeConfirm(false);
       }
@@ -1175,6 +1417,27 @@
         setTarget(['desktop', 'tablet', 'phone'][Number(e.key) - 1]);
       }
     });
+  }
+
+  /* The host dispatches dropped files here (capability "fileDrop"). */
+  function wireFileDrop() {
+    const files = window.chatoss && window.chatoss.files;
+    if (!files || typeof files.onDrop !== 'function') return;
+    try {
+      files.onDrop(function (list) {
+        const all = list || [];
+        const imgs = all.filter(isImageFile);
+        if (!imgs.length) {
+          if (all.length) toast('Only image files can be added here', true);
+          return;
+        }
+        const skipped = all.length - imgs.length;
+        if (skipped) toast(skipped + ' non-image file' + (skipped > 1 ? 's' : '') + ' ignored', true);
+        addImages(imgs);
+      });
+    } catch (err) {
+      console.warn('[proto] files.onDrop unavailable', err);
+    }
   }
 
   function initStageObserver() {
@@ -1195,14 +1458,18 @@
     }
     await loadStore();
     applyWidths();
+    renderAll();
     initGrips();
     initEvents();
     initStageObserver();
-    renderAll();
+    renderPending();
+    renderVisionHint();
     await loadModels();
+    renderVisionHint();
     autoGrow($('#prompt'));
   }
 
+  /* ── the seed prototype ───────────────────────────────────────────── */
   function initGrips() {
     initGrip($('#gripLeft'), 'left');
     initGrip($('#gripMid'), 'mid');

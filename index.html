@@ -49,10 +49,12 @@
       <div class="chat pf-chat" id="chatLog"></div>
       <div class="pf-chips" id="chips"></div>
       <div class="composer pf-composer">
+        <div class="pf-attach-tray" id="attachTray" hidden></div>
+        <div class="pf-vision-hint" id="visionHint" hidden></div>
         <textarea class="textarea" id="prompt" rows="2" spellcheck="false"
-          placeholder="Describe the prototype — e.g. &ldquo;a pricing page for a coffee subscription&rdquo;"></textarea>
+          placeholder="Describe the prototype — or drop / paste a reference image&hellip;"></textarea>
         <div class="pf-composer-row">
-          <span class="hint" id="composerHint">⌘⏎ to send</span>
+          <span class="hint" id="composerHint">⌘⏎ send · drop or paste images</span>
           <div class="spacer"></div>
           <button class="btn btn-ghost btn-sm" id="btnStop" type="button" hidden>Stop</button>
           <button class="btn btn-primary btn-sm" id="btnSend" type="button">Send</button>
@@ -169,6 +171,18 @@
       <div class="modal-foot">
         <button class="btn" id="mdConfirmCancel" type="button">Cancel</button>
         <button class="btn btn-danger" id="mdConfirmOk" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="mdImage" hidden>
+    <div class="modal pf-modal-img" role="dialog" aria-modal="true" aria-labelledby="mdImageName">
+      <div class="modal-head">
+        <span id="mdImageName">Image</span>
+        <button class="modal-close" id="mdImageX" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body pf-img-body">
+        <img id="mdImageImg" alt="" />
       </div>
     </div>
   </div>

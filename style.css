@@ -109,6 +109,35 @@ body {
 .pf-chips .chip { cursor: pointer; font-size: 11.5px; }
 .pf-chips .chip:hover { border-color: var(--accent); color: var(--text); }
 
+/* ── image attachments ────────────────────────────────────────────── */
+.pf-attach-tray { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf-attach {
+  position: relative; line-height: 0; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2);
+}
+.pf-attach img { display: block; width: 56px; height: 56px; object-fit: cover; cursor: zoom-in; }
+.pf-attach-x {
+  position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; padding: 0;
+  display: grid; place-items: center; line-height: 1; font-size: 13px; cursor: pointer;
+  border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.62); color: #fff;
+}
+.pf-attach-x:hover { background: var(--danger); }
+.pf-vision-hint {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--amber);
+}
+.pf-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+.pf-thumb {
+  padding: 0; line-height: 0; cursor: zoom-in; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2);
+}
+.pf-thumb img { display: block; max-width: 168px; max-height: 100px; object-fit: cover; }
+.pf-thumb:hover { border-color: var(--accent); }
+body.pf-dragging .pf-composer { outline: 2px dashed var(--accent); outline-offset: -7px; }
+.pf-modal-img { width: auto; max-width: min(94vw, 1080px); }
+.pf-img-body { display: flex; justify-content: center; padding: 10px; }
+#mdImageImg { max-width: 100%; max-height: 68vh; border-radius: 8px; background: #fff; }
+
 .pf-composer {
   display: flex; flex-direction: column; gap: 6px;
   padding: 8px 10px 10px; border-top: 1px solid var(--border); background: var(--bg);
