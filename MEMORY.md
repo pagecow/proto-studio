@@ -32,3 +32,28 @@ Durable lessons recorded by coding agents working in this project. The engine re
 - Host `git` is **2.23.0** — `git init -b main` is unsupported (exit 129). Use `git symbolic-ref HEAD refs/heads/main` on the fresh repo instead.
 - **Heredocs (`<<'MSG'`) do not work** through this run_command shell wrapper — the whole command fails with exit 129 and no output. For multi-paragraph commit messages use repeated `-m` flags (each `-m` becomes its own paragraph; put `Built with ChatOSS.ai` last); for release notes use `--notes-file <path>` with a `write_file`-created file.
 - `gh` is authed as **pagecow** (scopes include `repo`, `workflow`); git uses SSH.
+
+## 2026-09-21 18:36:42
+
+## Proto Studio v1.1.0 — images the agent can see (API shapes VERIFIED, not guessed)
+
+**Vision input — the app-facing shape is `images: [base64]` ON THE MESSAGE, NOT OpenAI content parts:**
+```js
+chat.runTurn({ messages: [{ role:'user', content:'…', images: ['<base64, NO data-URL prefix>'] }] })
+```
+`ChatTurn` (src/lib/ollama.ts) is `{ role, content: string, images?: string[] /* base64, no prefix */ }`. Verified live: a canvas-drawn red circle sent this way came back as "I see a single solid circle centered…" (`sawImage: true`) on `deepseek-v4.1-flash:cloud`.
+🔴 **DO NOT** send `content: [{type:'text'…},{type:'image_url',image_url:{url:'data:…'}}]`. It fails with a MISLEADING error — "The endpoint returned a web page (HTTP 400), not an API response. Check the Base URL in Settings → API Keys…" (raised in `src-tauri/src/custom_chat.rs`). That reads like a misconfigured endpoint, but the text control turn on the same model succeeded — it is a **schema rejection**, not config. Cost me a wrong diagnosis until the source was read.
+**Vision gating:** models report `vision` in `listModels()[].capabilities`; the host strips images for models without it (silently). 5 of 9 models here have vision; the default `deepseek-v4.1-flash:cloud` does.
+
+**Dropped files:** `window.chatoss.files.onDrop(cb)` → `cb(DroppedFile[])`, where
+`DroppedFile = { name, type, size, text(): Promise<string>, arrayBuffer(): Promise<ArrayBuffer> }` — content arrives via the async readers (no path, no data URL). Requires `"fileDrop"` in capabilities: the host only wires drops when `manifest.capabilities.includes('fileDrop')` (AppRuntimeView `hasFileDrop`) and renders its own `.app-drop-overlay` OVER the iframe, so in-frame DOM drag events usually never fire — **the `onDrop` subscription is the real path**; an in-frame handler is only a fallback. Paste (Cmd+V) needs no capability and works through `clipboardData.items`.
+
+**scopedData is safe for big values:** a `scoped_data` value (or message payload / attachment data URL) over `BLOB_THRESHOLD_BYTES` (256KB) is content-addressed into `blobs/<sha256>` by the host and resolved transparently on read (src-tauri/src/db.rs). So base64 image data URLs can live in app state; still downscale (long edge 1400px → JPEG q0.86, mirroring the host's own `images.ts fileToAttachment()` "downscale→JPEG").
+
+**🔧 Reusable forensic technique — probe reports via Drive:** when a probe needs to return a LOT of text (API registries, JSON) or must survive the preview's early snapshot, have the app write it with `drive.writeFile('_probe/<name>.json', text)` and read it from disk:
+```bash
+cat ~/Library/Application\ Support/com.chatoss.desktop/drive/<appid>/_probe/<name>.json
+```
+Far better than the `document.title` trick (no size limit, no second boot needed, no truncation).
+
+**Where to find canonical shapes fast (the real boundary):** the ChatOSS source is at `~/Documents/chat-oss-projects/chat-oss`. Read it instead of guessing: `src/lib/appBridge.ts` (bridge contracts + `DroppedFile`), `src/lib/ollama.ts` (`ChatTurn`, `ToolCall`), `src/lib/chatApi.ts` (`RunTurnOptions`/`RunTurnResult`), `src/components/AppRuntimeView.tsx` (drop wiring), `src/lib/images.ts` (attachment pipeline). `platform.apis()` (inside the app) gives live method signatures. Grep with `--exclude-dir=target --exclude-dir=node_modules` and BOUND the output — a bare recursive grep over `src-tauri/target` (Rust build artifacts, hundreds of MB) TIMES OUT the shell wrapper.
