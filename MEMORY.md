@@ -57,3 +57,12 @@ cat ~/Library/Application\ Support/com.chatoss.desktop/drive/<appid>/_probe/<nam
 Far better than the `document.title` trick (no size limit, no second boot needed, no truncation).
 
 **Where to find canonical shapes fast (the real boundary):** the ChatOSS source is at `~/Documents/chat-oss-projects/chat-oss`. Read it instead of guessing: `src/lib/appBridge.ts` (bridge contracts + `DroppedFile`), `src/lib/ollama.ts` (`ChatTurn`, `ToolCall`), `src/lib/chatApi.ts` (`RunTurnOptions`/`RunTurnResult`), `src/components/AppRuntimeView.tsx` (drop wiring), `src/lib/images.ts` (attachment pipeline). `platform.apis()` (inside the app) gives live method signatures. Grep with `--exclude-dir=target --exclude-dir=node_modules` and BOUND the output — a bare recursive grep over `src-tauri/target` (Rust build artifacts, hundreds of MB) TIMES OUT the shell wrapper.
+
+## 2026-09-21 18:40:24
+
+## Store listing state (Proto Studio) — DO NOT resubmit unless the user asks
+
+- **The app itself is fully shipped and live-installable:** repo `pagecow/proto-studio` (public, `main`, commit `41e5f98` + docs commit), latest release **v1.1.0** with `app-v1.1.0.aip` / `.zip` (24,149 bytes each, draft=false prerelease=false). The Store hosts no files, so anyone installing from the listing already gets 1.1.0 **with image drop/paste**.
+- **The Store *listing* description update is NOT live for other users.** The first resubmit (description now mentioning image input) ran the review and **APPROVED**, and was saved on this device — but the shared Store was unreachable at that moment, so it did not sync. Per the tool: it appears for other users "once they reconnect and publish it again". A retry was attempted and the user **cancelled the confirmation card** — so it is deliberately unsubmitted. 🔴 Do not call `publish_to_store` again for this app unless the user explicitly asks.
+- If the user later asks to retry: `publish_to_store({ name:'Proto Studio', category:'Design', repoUrl:'https://github.com/pagecow/proto-studio', description: <the version that mentions dropping/pasting reference images> })`.
+- Note the review runs (and is charged) per submission; the user is aware and chose to hold off.
