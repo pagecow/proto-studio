@@ -11,6 +11,7 @@ Three columns, one flow:
 - **Projects** (left) — a library of prototypes: create, rename, duplicate and delete. Each project keeps its own design, device target and conversation.
 - **Proto Agent** (middle) — describe what you want ("a pricing page for a coffee subscription", "an onboarding flow for a fitness app") and the agent writes a complete, self-contained HTML prototype. **Drop or paste reference images** — a screenshot, a competitor's page, a Figma export, a whiteboard sketch — and the agent designs from what it sees. Pick the model, watch it stream, and iterate.
 - **Canvas** (right) — the prototype rendered inside real device chrome, with **Desktop (1440×900)**, **Tablet (834×1112)** and **Phone (390×844)** views, rotation, and Fit / 50 / 75 / 100% zoom.
+- **Collapsible panels** — collapse the project list, the agent, or both (one button, or ⌘\) to give the prototype the whole window; a slim rail stays on screen so bringing them back is one click.
 
 Also included:
 

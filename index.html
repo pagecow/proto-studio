@@ -10,35 +10,49 @@
   <div class="pf-shell" id="shell">
 
     <!-- ── Column 1 — projects ─────────────────────────────────────── -->
-    <aside class="pf-col pf-col--projects">
-      <div class="pf-head">
-        <span class="app-sidebar-label">Projects</span>
-        <div class="spacer"></div>
-        <button class="btn btn-sm" id="btnNew" type="button">New</button>
-      </div>
-      <div class="pf-scroll">
-        <div class="list" id="projectList"></div>
-        <div class="empty pf-empty-inline" id="projectEmpty" hidden>
-          <div class="empty-title">No projects</div>
-          <div class="empty-text">Make one to start prototyping.</div>
+    <aside class="pf-col pf-col--projects" id="colProjects">
+      <button class="pf-rail" id="railProjects" type="button" title="Show the project list">
+        <span class="pf-rail-chev">»</span>
+        <span class="pf-rail-label">Projects</span>
+      </button>
+      <div class="pf-col-inner">
+        <div class="pf-head">
+          <span class="app-sidebar-label">Projects</span>
+          <div class="spacer"></div>
+          <button class="btn btn-sm" id="btnNew" type="button">New</button>
+          <button class="btn btn-icon btn-sm" id="btnCollapseProjects" type="button" title="Collapse projects">«</button>
         </div>
-      </div>
-      <div class="pf-foot">
-        <button class="btn btn-ghost btn-sm" id="btnRename" type="button">Rename</button>
-        <button class="btn btn-ghost btn-sm" id="btnDuplicate" type="button">Duplicate</button>
-        <button class="btn btn-ghost btn-sm" id="btnDelete" type="button">Delete</button>
+        <div class="pf-scroll">
+          <div class="list" id="projectList"></div>
+          <div class="empty pf-empty-inline" id="projectEmpty" hidden>
+            <div class="empty-title">No projects</div>
+            <div class="empty-text">Make one to start prototyping.</div>
+          </div>
+        </div>
+        <div class="pf-foot">
+          <button class="btn btn-ghost btn-sm" id="btnRename" type="button">Rename</button>
+          <button class="btn btn-ghost btn-sm" id="btnDuplicate" type="button">Duplicate</button>
+          <button class="btn btn-ghost btn-sm" id="btnDelete" type="button">Delete</button>
+        </div>
       </div>
     </aside>
 
     <div class="pf-grip" id="gripLeft" title="Drag to resize"></div>
 
     <!-- ── Column 2 — Proto Agent ──────────────────────────────────── -->
-    <section class="pf-col pf-col--agent">
+    <section class="pf-col pf-col--agent" id="colAgent">
+      <button class="pf-rail" id="railAgent" type="button" title="Show the Proto Agent">
+        <span class="pf-rail-chev">»</span>
+        <span class="pf-rail-label">Proto Agent</span>
+      </button>
+      <div class="pf-col-inner">
       <div class="pf-head">
         <span class="pf-agent-dot" aria-hidden="true"></span>
         <span class="app-title">Proto Agent</span>
+        <span class="pf-projname truncate" id="agentProject"></span>
         <div class="spacer"></div>
         <button class="btn btn-ghost btn-sm" id="btnClearChat" type="button" title="Clear this project's conversation">Clear</button>
+        <button class="btn btn-icon btn-sm" id="btnCollapseAgent" type="button" title="Collapse the Proto Agent">«</button>
       </div>
       <div class="pf-modelbar">
         <label class="label" for="modelSelect">Model</label>
@@ -60,6 +74,7 @@
           <button class="btn btn-primary btn-sm" id="btnSend" type="button">Send</button>
         </div>
       </div>
+      </div>
     </section>
 
     <div class="pf-grip" id="gripMid" title="Drag to resize"></div>
@@ -73,6 +88,8 @@
           <button class="seg-item" type="button" data-target="phone">Phone</button>
         </div>
         <button class="btn btn-sm" id="btnRotate" type="button" title="Rotate the device">Rotate</button>
+        <button class="btn btn-sm" id="btnFocus" type="button" title="Hide both side panels for a full-canvas view (⌘\)">Full canvas</button>
+        <span class="pf-tb-name truncate" id="tbProject"></span>
         <div class="spacer"></div>
         <label class="label" for="zoomSelect">Zoom</label>
         <select class="select pf-zoom" id="zoomSelect">

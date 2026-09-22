@@ -16,9 +16,12 @@ body {
 .pf-shell {
   display: grid;
   height: 100%;
+  /* The grip tracks are variables so a collapsed panel can take them to 0px.
+     They must NOT become display:none: a hidden grid item drops out of
+     auto-placement and every later column shifts one track left. */
   grid-template-columns:
-    var(--pf-w-left, 236px) 7px
-    var(--pf-w-mid, 384px) 7px
+    var(--pf-w-left, 236px) var(--pf-grip-left, 7px)
+    var(--pf-w-mid, 384px) var(--pf-grip-mid, 7px)
     minmax(320px, 1fr);
 }
 .pf-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
@@ -26,7 +29,8 @@ body {
 .pf-col--agent { border-right: 1px solid var(--border); }
 .pf-col--canvas { position: relative; }
 
-.pf-grip { cursor: col-resize; background: var(--border); opacity: 0.45; transition: opacity 0.12s ease; }
+.pf-grip { cursor: col-resize; background: var(--border); opacity: 0.45; transition: opacity 0.12s ease; min-width: 0; }
+.pf-grip.is-off { pointer-events: none; }
 .pf-grip:hover, .pf-grip.is-dragging { opacity: 1; background: var(--accent); }
 
 .pf-head {
@@ -34,6 +38,26 @@ body {
   min-height: 40px; padding: 8px 10px;
   border-bottom: 1px solid var(--border);
 }
+
+/* ── collapsible side panels ──────────────────────────────────────── */
+.pf-col-inner { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pf-col.is-collapsed .pf-col-inner { display: none; }
+.pf-col:not(.is-collapsed) > .pf-rail { display: none; }
+.pf-rail {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  width: 100%; height: 100%; padding: 12px 0; border: 0; cursor: pointer;
+  background: transparent; color: var(--muted); font-family: var(--sans);
+}
+.pf-rail:hover { background: var(--surface-2); color: var(--text); }
+.pf-rail:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.pf-rail-chev { font-size: 15px; line-height: 1; }
+.pf-rail-label {
+  writing-mode: vertical-rl; font-size: 10.5px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint);
+}
+.pf-projname { font-size: 11.5px; color: var(--muted); max-width: 44%; }
+.pf-tb-name { font-size: 11.5px; color: var(--muted); max-width: 230px; }
+#btnFocus.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
 .pf-foot {
   display: flex; flex-wrap: wrap; gap: 4px;
   padding: 7px 8px; border-top: 1px solid var(--border);

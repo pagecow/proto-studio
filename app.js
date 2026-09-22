@@ -79,7 +79,8 @@
     activeId: null,
     model: null,
     zoom: 'fit',
-    widths: { left: 236, mid: 384 }
+    widths: { left: 236, mid: 384 },
+    collapsed: { projects: false, agent: false }
   };
 
   let busy = false;
@@ -287,6 +288,7 @@
         store.model = saved.model || null;
         store.zoom = saved.zoom || 'fit';
         store.widths = Object.assign({ left: 236, mid: 384 }, saved.widths || {});
+        store.collapsed = Object.assign({ projects: false, agent: false }, saved.collapsed || {});
       }
     } catch (err) {
       console.warn('[proto] could not load state', err);
@@ -379,7 +381,12 @@
       ? t.label + (p.landscape && p.target !== 'desktop' ? ' · landscape' : '') +
         (p.html ? ' · ' + fmtBytes(p.html.length) : ' · no design yet')
       : 'no project';
+    /* The active project stays visible when the panels are collapsed. */
+    const name = p ? p.name : '';
+    $('#agentProject').textContent = name;
+    $('#tbProject').textContent = name;
   }
+
 
   /* Never hand the engine a model id that is not in the current list. */
   function resolveModel(p) {
@@ -547,7 +554,7 @@
   }
 
   function renderAll() {
-    applyWidths();
+    applyLayout();
     renderProjects();
     renderAgentHeader();
     renderChat();
@@ -556,10 +563,49 @@
     renderVisionHint();
   }
 
-  function applyWidths() {
+  /* Grid widths + which side panels are collapsed. A collapsed panel keeps a
+     36px rail so the way back is always on screen. */
+  function applyLayout() {
     const w = store.widths || { left: 236, mid: 384 };
-    $('#shell').style.setProperty('--pf-w-left', Math.round(w.left || 236) + 'px');
-    $('#shell').style.setProperty('--pf-w-mid', Math.round(w.mid || 384) + 'px');
+    const c = store.collapsed || {};
+    const shell = $('#shell');
+    shell.style.setProperty('--pf-w-left', Math.round(c.projects ? 36 : (w.left || 236)) + 'px');
+    shell.style.setProperty('--pf-w-mid', Math.round(c.agent ? 36 : (w.mid || 384)) + 'px');
+    $('#colProjects').classList.toggle('is-collapsed', !!c.projects);
+    $('#colAgent').classList.toggle('is-collapsed', !!c.agent);
+    shell.style.setProperty('--pf-grip-left', c.projects ? '0px' : '7px');
+    shell.style.setProperty('--pf-grip-mid', c.agent ? '0px' : '7px');
+    $('#gripLeft').classList.toggle('is-off', !!c.projects);
+    $('#gripMid').classList.toggle('is-off', !!c.agent);
+    const both = !!(c.projects && c.agent);
+    const focus = $('#btnFocus');
+    if (focus) {
+      focus.classList.toggle('is-on', both);
+      focus.textContent = both ? 'Show panels' : 'Full canvas';
+      focus.title = both
+        ? 'Bring the side panels back (⌘\\)'
+        : 'Hide both side panels for a full-canvas view (⌘\\)';
+    }
+  }
+
+  function setCollapsed(which, on) {
+    if (!store.collapsed) store.collapsed = { projects: false, agent: false };
+    store.collapsed[which] = !!on;
+    save();
+    applyLayout();
+    if (store.zoom === 'fit') renderCanvas();
+  }
+
+  function togglePanel(which) {
+    setCollapsed(which, !(store.collapsed || {})[which]);
+  }
+
+  /* One keystroke / button: both panels away for a full-canvas view, and back. */
+  function toggleFocusPanels() {
+    const c = store.collapsed || {};
+    const to = !(c.projects && c.agent);
+    setCollapsed('projects', to);
+    setCollapsed('agent', to);
   }
 
   /* ── the agent: prompt, tools, turn ───────────────────────────────── */
@@ -1246,7 +1292,7 @@
           ? Math.max(160, Math.min(460, raw))
           : Math.max(280, Math.min(640, raw));
         store.widths[which] = w;
-        applyWidths();
+        applyLayout();
       }
       function up() {
         el.classList.remove('is-dragging');
@@ -1357,6 +1403,13 @@
     });
     $('#btnStarterCode').addEventListener('click', openCode);
 
+    /* ── collapsible panels: collapse controls + the rails that bring them back ── */
+    $('#btnCollapseProjects').addEventListener('click', function () { togglePanel('projects'); });
+    $('#railProjects').addEventListener('click', function () { togglePanel('projects'); });
+    $('#btnCollapseAgent').addEventListener('click', function () { togglePanel('agent'); });
+    $('#railAgent').addEventListener('click', function () { togglePanel('agent'); });
+    $('#btnFocus').addEventListener('click', toggleFocusPanels);
+
     $('#mdNameSave').addEventListener('click', function () {
       const v = $('#mdNameInput').value.trim();
       if (!v) { $('#mdNameInput').focus(); return; }
@@ -1416,6 +1469,12 @@
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && ['1', '2', '3'].indexOf(e.key) >= 0) {
         setTarget(['desktop', 'tablet', 'phone'][Number(e.key) - 1]);
       }
+      /* ⌘\ — both panels away for a full-canvas view, and back again. */
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key === '\\') {
+        e.preventDefault();
+        if (e.shiftKey) togglePanel('agent');
+        else toggleFocusPanels();
+      }
     });
   }
 
@@ -1457,7 +1516,7 @@
       return;
     }
     await loadStore();
-    applyWidths();
+    applyLayout();
     renderAll();
     initGrips();
     initEvents();
